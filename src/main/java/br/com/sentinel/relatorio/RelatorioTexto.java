@@ -47,6 +47,10 @@ public final class RelatorioTexto {
             }
         }
 
+        for (String observacao : resultado.observacoes()) {
+            sb.append("\nObservação: ").append(quebrar(observacao, 12)).append('\n');
+        }
+
         sb.append('\n');
         sb.append("Aviso: o Sentinel confere só os números do código. Ele NÃO confirma quem\n");
         sb.append("recebe o dinheiro. Antes de pagar, veja o nome do beneficiário no app do banco.\n");

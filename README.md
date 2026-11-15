@@ -113,6 +113,8 @@ Alertas:
 
 O resultado final é decidido pelo alerta **mais grave**: `SEM ALERTAS`, `BAIXO RISCO`, `ATENÇÃO` ou `ALTO RISCO`.
 
+Além dos alertas, o resultado pode trazer **observações** (ℹ), que não contam como risco: por exemplo, quando você informa banco ou vencimento numa conta de consumo (que não tem esses dados no código), o Sentinel avisa que eles foram ignorados, em vez de deixar você achar que foram conferidos.
+
 ## Como rodar
 
 Precisa só do **Java 17 ou mais novo**. O Gradle vem junto (`gradlew`), não precisa instalar.
@@ -176,11 +178,12 @@ curl -X POST http://localhost:8080/api/analisar \
   "alertas": [
     { "nivel": "ALTO", "titulo": "Banco diferente do esperado", "detalhe": "O pagamento vai para o banco 237 (Bradesco)..." }
   ],
+  "observacoes": [],
   "aviso": "O Sentinel confere só os números do código..."
 }
 ```
 
-*(resposta resumida; para contas de consumo, `tipo` é `CONTA_DE_CONSUMO` e `documento` traz `segmento`, `segmentoNome`, `empresa` e `valorEmReais`)*
+*(resposta resumida; `observacoes` traz avisos que não são risco, como "o banco que você informou foi ignorado" numa conta de consumo; para contas de consumo, `tipo` é `CONTA_DE_CONSUMO` e `documento` traz `segmento`, `segmentoNome`, `empresa` e `valorEmReais`)*
 
 | Rota | O que faz |
 |---|---|
@@ -292,7 +295,7 @@ A regra de negócio fica **só no Java**: o front-end não sabe calcular nada, e
 - **Fator de vencimento:** dias desde 07/10/1997. Chegou em 9999 em 21/02/2025 e reiniciou em 1000 no dia 22/02/2025. O mesmo fator pode significar duas datas, então o Sentinel escolhe a mais próxima de hoje.
 - **`record`** (Java 16+): classes só de dados (`Boleto`, `Alerta`, `Resultado`).
 - **`BigDecimal`:** dinheiro nunca é guardado em `double`, porque `0.1 + 0.2` não dá `0.3` exato.
-- **Testes com JUnit 5:** 113 testes em `src/test/`, incluindo testes que sobem o servidor de verdade, fazem requisições HTTP e simulam ataques. Os boletos de exemplo foram gerados por um programa separado, para os testes não conferirem o código contra ele mesmo.
+- **Testes com JUnit 5:** 117 testes em `src/test/`, incluindo testes que sobem o servidor de verdade, fazem requisições HTTP e simulam ataques. Os boletos de exemplo foram gerados por um programa separado, para os testes não conferirem o código contra ele mesmo.
 - **API HTTP sem framework:** o servidor usa o `HttpServer` que já vem no Java, para dar para enxergar o que frameworks como o Spring fazem por baixo.
 
 ## Segurança da versão web
