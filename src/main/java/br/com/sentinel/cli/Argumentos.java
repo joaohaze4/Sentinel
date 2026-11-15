@@ -14,9 +14,17 @@ import java.time.format.DateTimeParseException;
  *
  * <pre>
  * sentinel CODIGO [--valor 250,00] [--banco 341] [--vencimento 10/12/2026] [--hoje 2026-11-15]
+ * sentinel --web [--porta 8080]
  * </pre>
  */
-public record Argumentos(String codigo, DadosEsperados esperado, LocalDate hoje, boolean ajuda) {
+public record Argumentos(String codigo, DadosEsperados esperado, LocalDate hoje, boolean ajuda,
+                         boolean web, int porta) {
+
+    /** Porta padrão: a variável de ambiente PORT (usada por hospedagens) ou 8080. */
+    static int portaPadrao() {
+        String env = System.getenv("PORT");
+        return (env != null && env.matches("\\d{1,5}")) ? Integer.parseInt(env) : 8080;
+    }
 
     private static final DateTimeFormatter DATA_BR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -27,6 +35,8 @@ public record Argumentos(String codigo, DadosEsperados esperado, LocalDate hoje,
         LocalDate vencimento = null;
         LocalDate hoje = LocalDate.now();
         boolean ajuda = false;
+        boolean web = false;
+        int porta = portaPadrao();
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -37,6 +47,8 @@ public record Argumentos(String codigo, DadosEsperados esperado, LocalDate hoje,
                 case "--banco" -> banco = lerBanco(proximo(args, ++i, arg));
                 case "--vencimento" -> vencimento = lerData(proximo(args, ++i, arg));
                 case "--hoje" -> hoje = lerData(proximo(args, ++i, arg));
+                case "--web" -> web = true;
+                case "--porta" -> porta = lerPorta(proximo(args, ++i, arg));
                 default -> {
                     if (arg.startsWith("--")) {
                         throw new EntradaInvalidaException("Opção desconhecida: " + arg + " (use --ajuda)");
@@ -47,7 +59,7 @@ public record Argumentos(String codigo, DadosEsperados esperado, LocalDate hoje,
             }
         }
 
-        return new Argumentos(codigo, new DadosEsperados(valor, banco, vencimento), hoje, ajuda);
+        return new Argumentos(codigo, new DadosEsperados(valor, banco, vencimento), hoje, ajuda, web, porta);
     }
 
     private static String proximo(String[] args, int i, String opcao) {
@@ -55,6 +67,15 @@ public record Argumentos(String codigo, DadosEsperados esperado, LocalDate hoje,
             throw new EntradaInvalidaException("Faltou o valor depois de " + opcao);
         }
         return args[i];
+    }
+
+    static int lerPorta(String texto) {
+        String t = texto.trim();
+
+        if (!t.matches("\\d{1,5}") || Integer.parseInt(t) > 65535) {
+            throw new EntradaInvalidaException("Porta inválida: " + texto + " (exemplo: 8080)");
+        }
+        return Integer.parseInt(t);
     }
 
     /** Aceita "1.234,56", "1234,56" e "1234.56". */

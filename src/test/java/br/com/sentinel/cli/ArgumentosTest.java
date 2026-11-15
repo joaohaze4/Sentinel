@@ -47,6 +47,19 @@ class ArgumentosTest {
     }
 
     @Test
+    void leModoWebEPorta() {
+        Argumentos a = Argumentos.ler(new String[]{"--web", "--porta", "9090"});
+
+        assertTrue(a.web());
+        assertEquals(9090, a.porta());
+    }
+
+    @Test
+    void recusaPortaInvalida() {
+        assertThrows(EntradaInvalidaException.class, () -> Argumentos.ler(new String[]{"--porta", "99999"}));
+    }
+
+    @Test
     void recusaDataInvalida() {
         assertThrows(EntradaInvalidaException.class, () -> Argumentos.lerData("31/02/2026x"));
     }
