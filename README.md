@@ -323,12 +323,46 @@ O que **não** está coberto: ataques grandes e distribuídos (DDoS) exigem prot
 
 Nenhuma ferramenta detecta 100% das fraudes. O Sentinel reduz o risco e explica o que conferir.
 
+## O que o Sentinel não detecta (e por quê)
+
+O Sentinel é um **primeiro filtro**: ele pega erro de digitação, código adulterado e o golpe do código trocado. Mas existem golpes em que **o código é real e perfeito**, e aí nenhuma ferramenta que olha só os números consegue pegar.
+
+### 1. Boleto "real" com beneficiário falso
+
+O golpista abre uma conta **no mesmo banco** que o fornecedor usa e registra um boleto de verdade, com o mesmo valor e vencimento. Para o Sentinel está tudo certo: dígitos válidos, banco esperado, valor esperado.
+
+- **Por que não dá para pegar:** o que denuncia o golpe é o **beneficiário** (nome e CNPJ de quem recebe). Essa informação fica no cadastro do banco e não está nos números do boleto.
+- **Como se defender:** na hora de pagar, o app do banco mostra o beneficiário, então confira o nome e o CNPJ. E se o fornecedor emite boletos no seu CPF/CNPJ, eles aparecem sozinhos no **DDA** (Débito Direto Autorizado) do seu banco: boleto que chegou por e-mail ou WhatsApp e **não aparece no DDA** merece desconfiança.
+
+### 2. Conta de consumo verdadeira, mas de outra pessoa
+
+Se o golpista usa o código da companhia de energia de verdade, o dinheiro vai **para a companhia**, não para ele. Então o golpe é outro: ele envia a **conta real de outra pessoa** (às vezes a dele mesmo), e a vítima acaba pagando a conta dele.
+
+- **Por que não dá para pegar:** o número do cliente (unidade consumidora, instalação) fica no "campo livre" do código, e cada empresa organiza esse campo de um jeito, sem padrão.
+- **Como se defender:** confira o **número da instalação ou do cliente** impresso na conta, ou baixe a 2ª via direto no site ou app oficial da empresa.
+
+### Onde o Sentinel entra
+
+```text
+ 1. Sentinel            → os números do código são válidos e batem com o que eu esperava?
+ 2. Origem do documento → veio do site/app oficial ou apareceu no DDA?
+ 3. App do banco        → o beneficiário (nome/CNPJ) é quem deveria receber?
+```
+
+Só a soma das três camadas dá segurança. O Sentinel cobre a primeira e lembra das outras duas em toda análise.
+
+### Como dava para ir além
+
+- **Consulta do beneficiário antes do pagamento:** existem sistemas que consultam os dados registrados de um boleto (beneficiário, situação), mas exigem parceria e credenciais junto a bancos. Fica como visão de futuro, por exemplo para um sistema de contas a pagar de empresas.
+- **Cadastro de fornecedores com CNPJ esperado:** o Sentinel guardaria o CNPJ de cada fornecedor e mostraria "confira se o beneficiário no app é o CNPJ 12.345.678/0001-90". Ele não confirma sozinho, mas transforma um aviso genérico num passo concreto de conferência.
+
 ## Próximos passos
 
 - [x] Contas de consumo e tributos (padrão de arrecadação, 48 dígitos)
 - [x] "Hoje" no horário de Brasília (correção de fuso no servidor)
 - [ ] Ler o boleto a partir do PDF
 - [ ] Lista completa de bancos (tabela do Banco Central)
+- [ ] Cadastro de fornecedores com CNPJ esperado
 - [ ] Cadastro de fornecedores (banco e faixa de valor que cada um costuma usar)
 - [x] Interface web + API HTTP
 - [x] Hospedar a versão web ([sentinel-5gi8.onrender.com](https://sentinel-5gi8.onrender.com/))
