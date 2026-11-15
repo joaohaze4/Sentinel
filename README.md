@@ -3,7 +3,9 @@
 ![Testes](https://github.com/joaohaze4/sentinel/actions/workflows/testes.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-17%2B-blue)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/joaohaze4/Sentinel)
+### ▶ [Testar online: sentinel-5gi8.onrender.com](https://sentinel-5gi8.onrender.com/)
+
+> Hospedado no plano grátis do Render: se o site estiver "dormindo", a primeira visita leva uns 30-50 segundos para abrir.
 
 **Verificador de boletos antes do pagamento.** O Sentinel lê a linha digitável (ou o código de barras) de um boleto bancário, confere se os números são válidos e aponta sinais de fraude, explicando cada um em linguagem simples.
 
@@ -144,8 +146,10 @@ Erros voltam com o status certo e uma mensagem: `400` (código inválido), `405`
 O repositório já tem tudo pronto: `Dockerfile` (imagem em duas etapas: compila com JDK, roda só com JRE) e `render.yaml` (configuração do serviço).
 
 1. Crie uma conta em [render.com](https://render.com) entrando com o GitHub.
-2. Clique no botão **Deploy to Render** no topo deste README (ou em *New → Blueprint* e escolha este repositório).
+2. Clique em **New → Blueprint** e escolha este repositório (ou use o botão abaixo).
 3. Confirme em **Apply**. Em alguns minutos o Render dá um link `https://sentinel-xxxx.onrender.com`.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/joaohaze4/Sentinel)
 
 A cada push na `main`, o Render publica a versão nova sozinho. No plano grátis o serviço "dorme" depois de um tempo sem visitas e a primeira visita leva uns 30-50 segundos para acordar.
 
@@ -255,7 +259,7 @@ Nenhuma ferramenta detecta 100% das fraudes. O Sentinel reduz o risco e explica 
 - [ ] Contas de consumo e tributos (padrão de arrecadação, 48 dígitos)
 - [ ] Cadastro de fornecedores (banco e faixa de valor que cada um costuma usar)
 - [x] Interface web + API HTTP
-- [x] Preparar a hospedagem (Docker + Render)
+- [x] Hospedar a versão web ([sentinel-5gi8.onrender.com](https://sentinel-5gi8.onrender.com/))
 - [ ] Migrar a API para Spring Boot
 - [ ] Leitura do boleto em PDF/imagem
 - [ ] Lista completa de bancos a partir da tabela oficial do Banco Central
