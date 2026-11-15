@@ -1,0 +1,9 @@
+# não manda para a imagem o que não precisa
+.git
+.github
+.gradle
+build
+docs
+*.md
+.idea
+.vscode

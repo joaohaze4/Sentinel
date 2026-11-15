@@ -112,8 +112,9 @@ public class Main {
         try {
             ServidorWeb servidor = new ServidorWeb(porta);
             servidor.iniciar();
-            saida.println("Sentinel rodando em http://localhost:" + servidor.porta());
-            saida.println("Abra esse endereço no navegador. Para parar, aperte Ctrl+C.");
+            saida.println("Sentinel rodando na porta " + servidor.porta() + ".");
+            saida.println("No seu computador, abra http://localhost:" + servidor.porta()
+                    + " no navegador. Para parar, aperte Ctrl+C.");
         } catch (IOException e) {
             saida.println("Erro: não consegui abrir a porta " + porta
                     + ". Ela pode estar em uso; tente outra com --porta 8081.");
