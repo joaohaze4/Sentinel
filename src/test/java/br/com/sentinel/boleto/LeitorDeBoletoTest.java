@@ -64,7 +64,8 @@ class LeitorDeBoletoTest {
     }
 
     @Test
-    void avisaQueContaDeConsumoAindaNaoESuportada() {
+    void leitorDeBoletoRecusaContaDeConsumo() {
+        // quem lê conta de consumo é o LeitorDeContaDeConsumo (via LeitorDeDocumento)
         var erro = assertThrows(EntradaInvalidaException.class,
                 () -> LeitorDeBoleto.ler("8" + "1".repeat(47), HOJE));
         assertTrue(erro.getMessage().contains("conta de consumo"));

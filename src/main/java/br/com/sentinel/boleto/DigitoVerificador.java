@@ -70,6 +70,42 @@ public final class DigitoVerificador {
         return dv;
     }
 
+    /**
+     * Módulo 11 do padrão de ARRECADAÇÃO (contas de consumo e tributos).
+     *
+     * <p>Mesmos pesos do boleto (2 a 9), mas a regra do final é diferente:
+     * resto 0 ou 1 → DV 0; resto 10 → DV 1; senão DV = 11 - resto.</p>
+     */
+    public static int modulo11Arrecadacao(String numeros) {
+        int soma = 0;
+        int peso = 2;
+
+        for (int i = numeros.length() - 1; i >= 0; i--) {
+            soma += digito(numeros, i) * peso;
+            peso = (peso == 9) ? 2 : peso + 1;
+        }
+
+        int resto = soma % 11;
+
+        if (resto == 0 || resto == 1) {
+            return 0;
+        }
+        if (resto == 10) {
+            return 1;
+        }
+        return 11 - resto;
+    }
+
+    /**
+     * Nas contas de consumo, a 3ª posição do código diz qual módulo usar:
+     * 6 ou 7 → módulo 10; 8 ou 9 → módulo 11.
+     */
+    public static int arrecadacao(char identificacaoValor, String numeros) {
+        return (identificacaoValor == '6' || identificacaoValor == '7')
+                ? modulo10(numeros)
+                : modulo11Arrecadacao(numeros);
+    }
+
     private static int digito(String numeros, int posicao) {
         return numeros.charAt(posicao) - '0'; // '7' - '0' = 7 (truque com a tabela de caracteres)
     }

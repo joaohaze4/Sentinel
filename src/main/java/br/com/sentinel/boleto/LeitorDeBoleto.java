@@ -21,11 +21,11 @@ public final class LeitorDeBoleto {
     public static Boleto ler(String entrada, LocalDate hoje) {
         String digitos = limpar(entrada);
 
-        // Contas de consumo (luz, água, impostos) começam com 8 e seguem outro padrão.
+        // Contas de consumo (luz, água, impostos) começam com 8 e seguem outro padrão:
+        // quem cuida delas é o LeitorDeContaDeConsumo (o LeitorDeDocumento escolhe o certo).
         if (digitos.startsWith("8")) {
             throw new EntradaInvalidaException(
-                    "Isso parece uma conta de consumo ou guia de imposto (começa com 8). "
-                            + "Por enquanto o Sentinel analisa só boletos bancários.");
+                    "Isso é uma conta de consumo (começa com 8), não um boleto bancário.");
         }
 
         if (digitos.length() == TAMANHO_LINHA_DIGITAVEL) {

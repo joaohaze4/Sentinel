@@ -1,6 +1,7 @@
 package br.com.sentinel.cli;
 
 import br.com.sentinel.boleto.EntradaInvalidaException;
+import br.com.sentinel.boleto.Segmento;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -57,6 +58,47 @@ class ArgumentosTest {
     @Test
     void recusaPortaInvalida() {
         assertThrows(EntradaInvalidaException.class, () -> Argumentos.ler(new String[]{"--porta", "99999"}));
+    }
+
+    @Test
+    void leTipoDeContaPorApelidoOuNome() {
+        assertEquals(Segmento.ENERGIA_E_GAS, Argumentos.lerTipo("luz"));
+        assertEquals(Segmento.SANEAMENTO, Argumentos.lerTipo("Água"));
+        assertEquals(Segmento.TELECOMUNICACOES, Argumentos.lerTipo("TELECOMUNICACOES"));
+    }
+
+    @Test
+    void recusaTipoForaDaLista() {
+        assertThrows(EntradaInvalidaException.class, () -> Argumentos.lerTipo("<script>alert(1)</script>"));
+        assertThrows(EntradaInvalidaException.class, () -> Argumentos.lerTipo("USO_DO_BANCO_x"));
+    }
+
+    @Test
+    void leEmpresa() {
+        assertEquals("0048", Argumentos.lerEmpresa("0048"));
+        assertEquals("12345678", Argumentos.lerEmpresa("12.345.678"));
+        assertThrows(EntradaInvalidaException.class, () -> Argumentos.lerEmpresa("12"));
+        assertThrows(EntradaInvalidaException.class, () -> Argumentos.lerEmpresa("abcd"));
+    }
+
+    @Test
+    void limitarTiraCaracteresPerigosos() {
+        assertEquals("?script?alert?1??/script?", Argumentos.limitar("<script>alert(1)</script>"));
+        assertEquals("Água 12,50", Argumentos.limitar("Água 12,50"));
+    }
+
+    @Test
+    void mensagemDeErroNaoDevolveTextoGigante() {
+        var erro = assertThrows(EntradaInvalidaException.class, () -> Argumentos.lerTipo("x".repeat(500)));
+        assertTrue(erro.getMessage().length() < 200);
+    }
+
+    @Test
+    void leOpcoesDeConta() {
+        Argumentos a = Argumentos.ler(new String[]{"8365", "--tipo", "energia", "--empresa", "0048"});
+
+        assertEquals(Segmento.ENERGIA_E_GAS, a.esperado().segmento());
+        assertEquals("0048", a.esperado().empresa());
     }
 
     @Test

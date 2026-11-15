@@ -18,7 +18,7 @@ import java.util.List;
  * <p>Só faz sentido quando o usuário digitou a linha digitável. Se ele informou o código
  * de barras, a linha é gerada pelo próprio Sentinel e os dígitos sempre vão bater.</p>
  */
-public class RegraDigitosDosCampos implements Regra {
+public class RegraDigitosDosCampos implements Regra<Boleto> {
 
     @Override
     public List<Alerta> avaliar(Boleto boleto, DadosEsperados esperado, LocalDate hoje) {

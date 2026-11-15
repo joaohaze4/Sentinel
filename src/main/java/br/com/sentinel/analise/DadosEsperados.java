@@ -1,5 +1,7 @@
 package br.com.sentinel.analise;
 
+import br.com.sentinel.boleto.Segmento;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -11,10 +13,22 @@ import java.time.LocalDate;
  * mas o banco (ou o valor) não bate com o que o usuário esperava.</p>
  *
  * <p>Todos os campos são opcionais: {@code null} = não informado.</p>
+ *
+ * @param valor       valor esperado (boleto e conta de consumo)
+ * @param codigoBanco banco esperado (só boleto)
+ * @param vencimento  vencimento esperado (só boleto; conta de consumo não traz vencimento no código)
+ * @param segmento    tipo de conta esperado, ex.: energia (só conta de consumo)
+ * @param empresa     código da empresa da conta anterior (só conta de consumo)
  */
-public record DadosEsperados(BigDecimal valor, String codigoBanco, LocalDate vencimento) {
+public record DadosEsperados(BigDecimal valor, String codigoBanco, LocalDate vencimento,
+                             Segmento segmento, String empresa) {
+
+    /** Atalho para quem só informa os dados de boleto. */
+    public DadosEsperados(BigDecimal valor, String codigoBanco, LocalDate vencimento) {
+        this(valor, codigoBanco, vencimento, null, null);
+    }
 
     public static DadosEsperados nenhum() {
-        return new DadosEsperados(null, null, null);
+        return new DadosEsperados(null, null, null, null, null);
     }
 }

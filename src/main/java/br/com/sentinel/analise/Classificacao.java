@@ -5,10 +5,10 @@ import java.util.List;
 /** Resultado final, decidido pelo alerta MAIS GRAVE encontrado. */
 public enum Classificacao {
 
-    SEM_ALERTAS("Nenhum sinal de fraude encontrado nos números do boleto."),
+    SEM_ALERTAS("Nenhum sinal de fraude encontrado nos números do código."),
     BAIXO_RISCO("Detalhes para conferir, mas nada grave."),
     ATENCAO("Confira com o emissor antes de pagar."),
-    ALTO_RISCO("NÃO pague antes de confirmar o boleto direto com quem cobrou (site, app ou telefone oficial).");
+    ALTO_RISCO("NÃO pague antes de confirmar direto com quem cobrou (site, app ou telefone oficial).");
 
     private final String recomendacao;
 

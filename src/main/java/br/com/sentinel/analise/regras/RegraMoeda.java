@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /** Boleto em real sempre tem o código de moeda 9 (4ª posição). */
-public class RegraMoeda implements Regra {
+public class RegraMoeda implements Regra<Boleto> {
 
     @Override
     public List<Alerta> avaliar(Boleto boleto, DadosEsperados esperado, LocalDate hoje) {

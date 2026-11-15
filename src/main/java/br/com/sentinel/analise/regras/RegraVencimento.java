@@ -12,7 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /** Vencimento no passado ou muito longe no futuro. */
-public class RegraVencimento implements Regra {
+public class RegraVencimento implements Regra<Boleto> {
 
     /** Mais de 1 ano no futuro é incomum para boleto. */
     static final int LIMITE_DIAS_FUTURO = 365;

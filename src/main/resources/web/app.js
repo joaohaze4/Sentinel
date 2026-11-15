@@ -13,12 +13,15 @@ const esperado = document.getElementById('esperado');
 const CORES = { SEM_ALERTAS: '#22c55e', BAIXO_RISCO: '#60a5fa', ATENCAO: '#f59e0b', ALTO_RISCO: '#ef4444' };
 const NOMES_NIVEL = { ALTO: 'ALTO', MEDIO: 'MÉDIO', BAIXO: 'BAIXO' };
 
-// Boletos FICTÍCIOS (os mesmos do README e dos testes)
+// Boletos e contas FICTÍCIOS (os mesmos do README e dos testes)
 const EXEMPLOS = {
     valido:       { codigo: '34191.79001 10435.100473 91020.150008 7 16560000025000' },
     adulterado:   { codigo: '34191.79001 10735.100473 91020.150008 7 16560000025000' },
     trocado:      { codigo: '23791.79001 10435.100473 91020.150008 2 16560000025000', banco: '341', valor: '250,00' },
-    desconhecido: { codigo: '99991.79006 10435.100473 91020.150008 5 16560000050000' }
+    desconhecido: { codigo: '99991.79006 10435.100473 91020.150008 5 16560000050000' },
+    luz:          { codigo: '83650000001-0 87520048000-7 00000001234-4 56789012345-6', tipo: 'ENERGIA_E_GAS' },
+    // código real de TELEFONE, mas a pessoa acha que é conta de luz
+    contaFalsa:   { codigo: '84630000001-1 87520221000-6 00000001234-4 56789012345-6', tipo: 'ENERGIA_E_GAS' }
 };
 
 
@@ -38,7 +41,7 @@ formulario.addEventListener('submit', async function (evento) {
         const dados = await resposta.json();
 
         if (!resposta.ok) {
-            mostrarErro(dados.erro || 'Não foi possível analisar o boleto.');
+            mostrarErro(dados.erro || 'Não foi possível analisar o código.');
             return;
         }
 
@@ -53,7 +56,7 @@ formulario.addEventListener('submit', async function (evento) {
 
 function carregando(sim) {
     botao.disabled = sim;
-    botao.textContent = sim ? 'Analisando...' : 'Analisar boleto';
+    botao.textContent = sim ? 'Analisando...' : 'Analisar';
 }
 
 
@@ -67,7 +70,8 @@ document.querySelectorAll('.exemplo').forEach(function (botaoExemplo) {
         formulario.codigo.value = exemplo.codigo;
         formulario.banco.value = exemplo.banco || '';
         formulario.valor.value = exemplo.valor || '';
-        esperado.open = Boolean(exemplo.banco || exemplo.valor);
+        formulario.tipo.value = exemplo.tipo || '';
+        esperado.open = Boolean(exemplo.banco || exemplo.valor || exemplo.tipo);
 
         formulario.requestSubmit(); // já analisa
     });
@@ -88,7 +92,9 @@ function criar(tag, classe, texto) {
 function mostrarResultado(r) {
     conteudo.replaceChildren();
 
-    // selo + recomendação
+    // tipo + selo + recomendação
+    conteudo.append(criar('span', 'tipo-documento',
+        r.tipo === 'CONTA_DE_CONSUMO' ? 'conta de consumo / tributo' : 'boleto bancário'));
     conteudo.append(criar('span', 'selo selo--' + r.classificacao, r.classificacaoTexto));
     conteudo.append(criar('p', 'recomendacao', r.recomendacao));
 
@@ -103,13 +109,21 @@ function mostrarResultado(r) {
         preenchido.style.width = Math.max(r.pontuacao, 3) + '%';
     });
 
-    // dados do boleto
-    const b = r.boleto;
+    // dados do documento (cada tipo mostra campos diferentes)
+    const d = r.documento;
     const lista = criar('dl', 'dados');
-    adicionarDado(lista, 'Linha digitável', b.linhaFormatada, true);
-    adicionarDado(lista, 'Banco', b.banco + ' (' + (b.bancoNome || 'banco não identificado') + ')');
-    adicionarDado(lista, 'Valor', b.valorFormatado || 'não definido no código');
-    adicionarDado(lista, 'Vencimento', descreverVencimento(b));
+    adicionarDado(lista, 'Linha digitável', d.linhaFormatada, true);
+
+    if (r.tipo === 'CONTA_DE_CONSUMO') {
+        adicionarDado(lista, 'Tipo de conta', d.segmentoCodigo + ' (' + (d.segmentoNome || 'segmento inexistente') + ')');
+        adicionarDado(lista, 'Empresa', d.empresaFormatada);
+        adicionarDado(lista, 'Valor', d.valorFormatado || 'não definido no código');
+        adicionarDado(lista, 'Vencimento', 'não vem no código (confira na conta)');
+    } else {
+        adicionarDado(lista, 'Banco', d.banco + ' (' + (d.bancoNome || 'banco não identificado') + ')');
+        adicionarDado(lista, 'Valor', d.valorFormatado || 'não definido no código');
+        adicionarDado(lista, 'Vencimento', descreverVencimento(d));
+    }
     conteudo.append(lista);
 
     // alertas

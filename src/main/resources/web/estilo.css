@@ -121,7 +121,8 @@ body {
 }
 
 textarea,
-input {
+input,
+select {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid rgba(96, 165, 250, .35);
@@ -139,14 +140,29 @@ textarea {
 }
 
 textarea:focus,
-input:focus {
+input:focus,
+select:focus {
     outline: none;
     border-color: var(--azul-claro);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .25);
 }
 
-input[type="date"] {
+input[type="date"],
+select {
     color-scheme: dark;
+}
+
+.campo small {
+    color: var(--texto-suave);
+    font-size: 11px;
+}
+
+.dica {
+    margin-top: -3px;
+}
+
+.campo--largo {
+    grid-column: 1 / -1;
 }
 
 .esperado {
@@ -172,6 +188,7 @@ input[type="date"] {
 .campos {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
+    align-items: end; /* alinha as caixas mesmo quando um rótulo quebra em 2 linhas */
     gap: 12px;
     margin-top: 14px;
 }
@@ -244,6 +261,16 @@ input[type="date"] {
 .selo--BAIXO_RISCO { color: var(--azul-claro); background: rgba(96, 165, 250, .1); }
 .selo--ATENCAO     { color: var(--amarelo); background: rgba(245, 158, 11, .1); }
 .selo--ALTO_RISCO  { color: var(--vermelho); background: rgba(239, 68, 68, .12); }
+
+.tipo-documento {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--texto-suave);
+    font-family: monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
 
 .recomendacao {
     margin: 14px 0 16px;
@@ -405,7 +432,7 @@ input[type="date"] {
         grid-template-columns: 1fr 1fr;
     }
 
-    .campos .campo:last-child {
+    .campos .campo:nth-child(3) {
         grid-column: span 2;
     }
 

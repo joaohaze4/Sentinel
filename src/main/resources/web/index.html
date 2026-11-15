@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sentinel: confira se um boleto é seguro antes de pagar.">
-    <title>Sentinel | Verificador de boletos</title>
+    <meta name="description" content="Sentinel: confira se um boleto ou conta de consumo é seguro antes de pagar.">
+    <title>Sentinel | Verificador de boletos e contas</title>
     <link rel="stylesheet" href="/estilo.css">
     <!-- defer: o script roda depois que a página carregou -->
     <script src="/app.js" defer></script>
@@ -16,17 +16,18 @@
     <header class="topo">
         <p class="rotulo">&lt;SENTINEL / ANTIFRAUDE&gt;</p>
         <h1><span class="escudo" aria-hidden="true">🛡️</span> Sentinel</h1>
-        <p class="sub">Confira o boleto <strong>antes</strong> de pagar.</p>
+        <p class="sub">Confira o boleto ou a conta <strong>antes</strong> de pagar.</p>
     </header>
 
     <!-- ===================== FORMULÁRIO ===================== -->
     <section class="card" aria-labelledby="titulo-form">
-        <h2 id="titulo-form" class="titulo-card"><span>[01]</span> Boleto</h2>
+        <h2 id="titulo-form" class="titulo-card"><span>[01]</span> Código</h2>
 
         <form id="formulario" novalidate>
 
             <label class="campo" for="codigo">
                 Linha digitável ou código de barras
+                <small class="dica">boleto bancário ou conta de luz, água, telefone, imposto...</small>
                 <textarea id="codigo" name="codigo" rows="2" inputmode="numeric" autocomplete="off"
                           spellcheck="false" placeholder="34191.79001 10435.100473 91020.150008 7 16560000025000"></textarea>
             </label>
@@ -44,18 +45,32 @@
                     </label>
 
                     <label class="campo">
-                        Banco
+                        Banco <small>(boleto)</small>
                         <input name="banco" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="341">
                     </label>
 
                     <label class="campo">
-                        Vencimento
+                        Vencimento <small>(boleto)</small>
                         <input name="vencimento" type="date">
+                    </label>
+
+                    <label class="campo campo--largo">
+                        Tipo de conta <small>(conta de consumo)</small>
+                        <select name="tipo">
+                            <option value="">não sei / não é conta</option>
+                            <option value="ENERGIA_E_GAS">Energia elétrica e gás</option>
+                            <option value="SANEAMENTO">Água e esgoto</option>
+                            <option value="TELECOMUNICACOES">Telefone, internet e TV</option>
+                            <option value="PREFEITURAS">Prefeitura (IPTU e taxas)</option>
+                            <option value="ORGAOS_GOVERNAMENTAIS">Órgãos do governo</option>
+                            <option value="MULTAS_DE_TRANSITO">Multa de trânsito</option>
+                            <option value="EMPRESAS_CNPJ">Carnê / outra empresa</option>
+                        </select>
                     </label>
                 </div>
             </details>
 
-            <button type="submit" id="botao" class="botao">Analisar boleto</button>
+            <button type="submit" id="botao" class="botao">Analisar</button>
 
             <div class="exemplos">
                 <span>Testar com um exemplo:</span>
@@ -63,6 +78,8 @@
                 <button type="button" class="exemplo" data-exemplo="adulterado">🔴 adulterado</button>
                 <button type="button" class="exemplo" data-exemplo="trocado">🔴 banco trocado</button>
                 <button type="button" class="exemplo" data-exemplo="desconhecido">🟡 banco desconhecido</button>
+                <button type="button" class="exemplo" data-exemplo="luz">💡 conta de luz</button>
+                <button type="button" class="exemplo" data-exemplo="contaFalsa">🔴 conta "de luz" falsa</button>
             </div>
         </form>
     </section>
@@ -75,7 +92,7 @@
     </section>
 
     <footer class="rodape">
-        <p>Os exemplos são boletos fictícios. Nenhum dado é guardado.</p>
+        <p>Os exemplos são boletos e contas fictícios. Nenhum dado é guardado.</p>
         <p>
             <a href="https://github.com/joaohaze4/Sentinel" target="_blank" rel="noopener">código no GitHub</a>
             ·

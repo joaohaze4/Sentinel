@@ -79,6 +79,52 @@ class ServidorWebTest {
     }
 
     @Test
+    void analisaContaDeConsumo() throws Exception {
+        HttpResponse<String> r = post("/api/analisar", "codigo=" + LUZ_LINHA + "&tipo=ENERGIA_E_GAS");
+
+        assertEquals(200, r.statusCode());
+        assertTrue(r.body().contains("\"tipo\":\"CONTA_DE_CONSUMO\""));
+        assertTrue(r.body().contains("\"segmentoNome\":\"Energia elétrica e gás\""));
+        assertTrue(r.body().contains("\"empresa\":\"0048\""));
+        assertTrue(r.body().contains("\"classificacao\":\"SEM_ALERTAS\""));
+    }
+
+    @Test
+    void contaComTipoErradoEAltoRisco() throws Exception {
+        HttpResponse<String> r = post("/api/analisar", "codigo=" + TELEFONE_LINHA + "&tipo=ENERGIA_E_GAS");
+
+        assertTrue(r.body().contains("\"classificacao\":\"ALTO_RISCO\""));
+        assertTrue(r.body().contains("Tipo de conta diferente do esperado"));
+    }
+
+    @Test
+    void tipoForaDaListaDa400SemRefletirHtml() throws Exception {
+        HttpResponse<String> r = post("/api/analisar",
+                "codigo=" + LUZ_LINHA + "&tipo=%3Cscript%3Ealert(1)%3C%2Fscript%3E");
+
+        assertEquals(400, r.statusCode());
+        assertTrue(r.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+        assertTrue(r.body().contains("Tipo de conta inválido"));
+        assertTrue(!r.body().contains("<") && !r.body().contains(">"), "não pode refletir HTML: " + r.body());
+    }
+
+    @Test
+    void nenhumCampoRefleteHtmlNaMensagemDeErro() throws Exception {
+        String malicioso = "%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E";
+        for (String campo : new String[]{"valor", "banco", "vencimento", "tipo", "empresa"}) {
+            HttpResponse<String> r = post("/api/analisar", "codigo=" + LUZ_LINHA + "&" + campo + "=" + malicioso);
+
+            assertEquals(400, r.statusCode(), campo);
+            assertTrue(!r.body().contains("<") && !r.body().contains(">"), campo + ": " + r.body());
+        }
+    }
+
+    @Test
+    void empresaInvalidaDa400() throws Exception {
+        assertEquals(400, post("/api/analisar", "codigo=" + LUZ_LINHA + "&empresa=abc").statusCode());
+    }
+
+    @Test
     void codigoInvalidoDa400ComMensagem() throws Exception {
         HttpResponse<String> r = post("/api/analisar", "codigo=123");
 

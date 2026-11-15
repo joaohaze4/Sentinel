@@ -114,7 +114,7 @@ class AnalisadorDeRiscoTest {
         Resultado r = analisar(SEM_VALOR_LINHA);
 
         assertEquals(Classificacao.BAIXO_RISCO, r.classificacao());
-        assertTrue(temAlerta(r, "sem valor"));
+        assertTrue(temAlerta(r, "Sem valor"));
     }
 
     @Test

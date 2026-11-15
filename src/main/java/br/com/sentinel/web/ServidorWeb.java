@@ -1,11 +1,12 @@
 package br.com.sentinel.web;
 
+import br.com.sentinel.HorarioBrasil;
 import br.com.sentinel.analise.AnalisadorDeRisco;
 import br.com.sentinel.analise.DadosEsperados;
 import br.com.sentinel.analise.Resultado;
-import br.com.sentinel.boleto.Boleto;
+import br.com.sentinel.boleto.Documento;
 import br.com.sentinel.boleto.EntradaInvalidaException;
-import br.com.sentinel.boleto.LeitorDeBoleto;
+import br.com.sentinel.boleto.LeitorDeDocumento;
 import br.com.sentinel.cli.Argumentos;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -81,7 +82,7 @@ public class ServidorWeb {
     private final Supplier<LocalDate> relogio;
 
     public ServidorWeb(int porta) throws IOException {
-        this(ConfiguracaoServidor.padrao(porta), LocalDate::now);
+        this(ConfiguracaoServidor.padrao(porta), HorarioBrasil::hoje); // "hoje" no horário de Brasília
     }
 
     /** @param relogio de onde vem a data de "hoje" (nos testes, uma data fixa) */
@@ -151,15 +152,19 @@ public class ServidorWeb {
             Map<String, String> campos = Formulario.ler(lerCorpo(troca));
             LocalDate hoje = relogio.get();
 
+            // cada campo passa pela mesma validação do terminal (números, datas e listas permitidas)
             DadosEsperados esperado = new DadosEsperados(
                     vazio(campos.get("valor")) ? null : Argumentos.lerValor(campos.get("valor")),
                     vazio(campos.get("banco")) ? null : Argumentos.lerBanco(campos.get("banco")),
-                    vazio(campos.get("vencimento")) ? null : Argumentos.lerData(campos.get("vencimento")));
+                    vazio(campos.get("vencimento")) ? null : Argumentos.lerData(campos.get("vencimento")),
+                    vazio(campos.get("tipo")) ? null : Argumentos.lerTipo(campos.get("tipo")),
+                    vazio(campos.get("empresa")) ? null : Argumentos.lerEmpresa(campos.get("empresa")));
 
-            Boleto boleto = LeitorDeBoleto.ler(campos.get("codigo"), hoje);
-            Resultado resultado = analisador.analisar(boleto, esperado, hoje);
+            Documento documento = LeitorDeDocumento.ler(campos.get("codigo"), hoje);
+            Resultado resultado = analisador.analisar(documento, esperado, hoje);
 
             responder(troca, 200, RespostaJson.de(resultado, hoje), "application/json; charset=utf-8");
+
 
         } catch (EntradaInvalidaException e) {
             responder(troca, 400, Json.erro(e.getMessage()), "application/json; charset=utf-8");
