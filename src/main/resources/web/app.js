@@ -149,6 +149,11 @@ function mostrarResultado(r) {
         conteudo.append(ul);
     }
 
+    // observações: coisas que o usuário preencheu e que não se aplicam (não são risco)
+    (r.observacoes || []).forEach(function (observacao) {
+        conteudo.append(criar('p', 'observacao', 'ℹ ' + observacao));
+    });
+
     conteudo.append(criar('p', 'aviso', '⚠ ' + r.aviso));
 
     exibirSecao();

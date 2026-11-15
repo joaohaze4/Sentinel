@@ -60,6 +60,11 @@ final class RespostaJson {
                     + "}");
         }
 
+        List<String> observacoes = new ArrayList<>();
+        for (String o : resultado.observacoes()) {
+            observacoes.add(Json.texto(o));
+        }
+
         return "{"
                 + "\"tipo\":" + Json.texto(tipo) + ","
                 + "\"classificacao\":" + Json.texto(resultado.classificacao().name()) + ","
@@ -68,6 +73,7 @@ final class RespostaJson {
                 + "\"pontuacao\":" + resultado.pontuacao() + ","
                 + "\"documento\":" + documento + ","
                 + "\"alertas\":[" + String.join(",", alertas) + "],"
+                + "\"observacoes\":[" + String.join(",", observacoes) + "],"
                 + "\"aviso\":" + Json.texto(AVISO)
                 + "}";
     }

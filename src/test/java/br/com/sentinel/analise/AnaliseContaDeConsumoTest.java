@@ -110,11 +110,39 @@ class AnaliseContaDeConsumoTest {
     }
 
     @Test
-    void bancoEVencimentoEsperadosSaoIgnoradosNaConta() {
+    void bancoEVencimentoEsperadosSaoIgnoradosNaContaComObservacao() {
         // conta de consumo não tem banco nem vencimento no código
         Resultado r = analisar(LUZ_LINHA, new DadosEsperados(null, "341", LocalDate.of(2026, 1, 1)));
 
-        assertEquals(Classificacao.SEM_ALERTAS, r.classificacao());
+        assertEquals(Classificacao.SEM_ALERTAS, r.classificacao()); // observação não é risco
+        assertEquals(0, r.pontuacao());
+        assertEquals(1, r.observacoes().size());
+        assertTrue(r.observacoes().get(0).contains("banco e o vencimento"));
+    }
+
+    @Test
+    void observacaoSoDoBancoOuSoDoVencimento() {
+        assertTrue(analisar(LUZ_LINHA, new DadosEsperados(null, "341", null))
+                .observacoes().get(0).startsWith("O banco que você informou"));
+        assertTrue(analisar(LUZ_LINHA, new DadosEsperados(null, null, LocalDate.of(2026, 1, 1)))
+                .observacoes().get(0).startsWith("O vencimento que você informou"));
+    }
+
+    @Test
+    void semCamposQueNaoSeAplicamNaoTemObservacao() {
+        assertTrue(analisar(LUZ_LINHA, new DadosEsperados(new BigDecimal("187.52"), null, null,
+                Segmento.ENERGIA_E_GAS, "0048")).observacoes().isEmpty());
+        assertTrue(analisar(VALIDO_LINHA, new DadosEsperados(new BigDecimal("250.00"), "341", null))
+                .observacoes().isEmpty());
+    }
+
+    @Test
+    void boletoComTipoOuEmpresaGanhaObservacao() {
+        Resultado ambos = analisar(VALIDO_LINHA, new DadosEsperados(null, null, null, Segmento.ENERGIA_E_GAS, "0048"));
+        assertTrue(ambos.observacoes().get(0).contains("tipo de conta e a empresa"));
+
+        Resultado soEmpresa = analisar(VALIDO_LINHA, new DadosEsperados(null, null, null, null, "0048"));
+        assertTrue(soEmpresa.observacoes().get(0).startsWith("A empresa que você informou"));
     }
 
     @Test

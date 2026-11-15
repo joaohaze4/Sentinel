@@ -58,6 +58,7 @@ class ServidorWebTest {
         assertTrue(r.body().contains("\"valor\":\"250.00\""));
         assertTrue(r.body().contains("\"diasParaVencer\":25"));
         assertTrue(r.body().contains("\"alertas\":[]"));
+        assertTrue(r.body().contains("\"observacoes\":[]"));
     }
 
     @Test
@@ -87,6 +88,15 @@ class ServidorWebTest {
         assertTrue(r.body().contains("\"segmentoNome\":\"Energia elétrica e gás\""));
         assertTrue(r.body().contains("\"empresa\":\"0048\""));
         assertTrue(r.body().contains("\"classificacao\":\"SEM_ALERTAS\""));
+    }
+
+    @Test
+    void contaComBancoEVencimentoDevolveObservacao() throws Exception {
+        HttpResponse<String> r = post("/api/analisar", "codigo=" + LUZ_LINHA + "&banco=256&vencimento=2026-11-17");
+
+        assertEquals(200, r.statusCode());
+        assertTrue(r.body().contains("\"classificacao\":\"SEM_ALERTAS\""));
+        assertTrue(r.body().contains("\"observacoes\":[\"O banco e o vencimento que você informou foram ignorados"));
     }
 
     @Test
