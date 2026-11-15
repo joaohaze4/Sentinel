@@ -32,39 +32,79 @@ import java.util.function.Supplier;
  * POST /api/analisar   recebe o formulário e devolve a análise em JSON
  * GET  /api/saude      responde {"status":"ok"} (usado por serviços de hospedagem)
  * </pre>
+ *
+ * <p>Proteções: limite de requisições por IP, tempo máximo por requisição (contra conexões
+ * lentas de propósito), lista fechada de arquivos, limite de tamanho e cabeçalhos de segurança.</p>
  */
 public class ServidorWeb {
 
     /** Um boleto tem no máximo ~60 caracteres; 4 KB sobra e impede abuso com corpos gigantes. */
     static final int TAMANHO_MAXIMO_REQUISICAO = 4096;
 
-    private record ArquivoEstatico(String recurso, String tipo) {
+    /** Quantas requisições podem ser atendidas ao mesmo tempo. */
+    static final int ATENDENTES = 16;
+
+    /*
+     * Proteção contra "slowloris": o atacante abre conexões e manda os dados bem devagar
+     * (ou nunca termina), prendendo os atendentes do servidor até ninguém mais ser atendido.
+     *
+     * O HttpServer do Java lê estes ajustes UMA vez, quando é carregado. Por padrão eles
+     * são "infinito". Aqui limitamos a 10 segundos para receber a requisição e 10 para
+     * mandar a resposta; passou disso, a conexão é fechada.
+     * (Só definimos se ninguém definiu antes, para os testes poderem usar valores menores.)
+     */
+    static {
+        definirSeAusente("sun.net.httpserver.maxReqTime", "10");
+        definirSeAusente("sun.net.httpserver.maxRspTime", "10");
+    }
+
+    private static void definirSeAusente(String propriedade, String valor) {
+        if (System.getProperty(propriedade) == null) {
+            System.setProperty(propriedade, valor);
+        }
+    }
+
+    private record ArquivoEstatico(byte[] conteudo, String tipo) {
     }
 
     /**
      * Lista fechada de arquivos que podem ser baixados. Nunca montamos o caminho a partir
      * do que o usuário pediu, então não tem como pedir "../../senhas.txt" (path traversal).
      */
-    private static final Map<String, ArquivoEstatico> ARQUIVOS = Map.of(
-            "/", new ArquivoEstatico("/web/index.html", "text/html; charset=utf-8"),
-            "/index.html", new ArquivoEstatico("/web/index.html", "text/html; charset=utf-8"),
-            "/estilo.css", new ArquivoEstatico("/web/estilo.css", "text/css; charset=utf-8"),
-            "/app.js", new ArquivoEstatico("/web/app.js", "text/javascript; charset=utf-8"));
+    private final Map<String, ArquivoEstatico> arquivos;
 
     private final HttpServer servidor;
     private final ExecutorService executor;
     private final AnalisadorDeRisco analisador = new AnalisadorDeRisco();
+    private final LimitadorDeRequisicoes limitador;
+    private final boolean atrasDeProxy;
     private final Supplier<LocalDate> relogio;
 
     public ServidorWeb(int porta) throws IOException {
-        this(porta, LocalDate::now);
+        this(ConfiguracaoServidor.padrao(porta), LocalDate::now);
     }
 
     /** @param relogio de onde vem a data de "hoje" (nos testes, uma data fixa) */
     public ServidorWeb(int porta, Supplier<LocalDate> relogio) throws IOException {
+        this(new ConfiguracaoServidor(porta, false,
+                ConfiguracaoServidor.LIMITE_POR_IP, ConfiguracaoServidor.LIMITE_GLOBAL), relogio);
+    }
+
+    public ServidorWeb(ConfiguracaoServidor config, Supplier<LocalDate> relogio) throws IOException {
         this.relogio = relogio;
-        this.servidor = HttpServer.create(new InetSocketAddress(porta), 0);
-        this.executor = Executors.newFixedThreadPool(4);
+        this.atrasDeProxy = config.atrasDeProxy();
+        this.limitador = new LimitadorDeRequisicoes(config.limitePorIpPorMinuto(), config.limiteGlobalPorMinuto());
+
+        // os arquivos são lidos uma vez só, na inicialização, e ficam na memória
+        ArquivoEstatico pagina = carregar("/web/index.html", "text/html; charset=utf-8");
+        this.arquivos = Map.of(
+                "/", pagina,
+                "/index.html", pagina,
+                "/estilo.css", carregar("/web/estilo.css", "text/css; charset=utf-8"),
+                "/app.js", carregar("/web/app.js", "text/javascript; charset=utf-8"));
+
+        this.servidor = HttpServer.create(new InetSocketAddress(config.porta()), 0);
+        this.executor = Executors.newFixedThreadPool(ATENDENTES);
 
         servidor.createContext("/api/analisar", this::analisar);
         servidor.createContext("/api/saude", this::saude);
@@ -101,6 +141,13 @@ public class ServidorWeb {
                 return;
             }
 
+            if (!limitador.permitir(ipDoCliente(troca))) {
+                troca.getResponseHeaders().set("Retry-After", String.valueOf(limitador.segundosParaLiberar()));
+                responder(troca, 429, Json.erro("Muitas análises em pouco tempo. Espere um minuto e tente de novo."),
+                        "application/json; charset=utf-8");
+                return;
+            }
+
             Map<String, String> campos = Formulario.ler(lerCorpo(troca));
             LocalDate hoje = relogio.get();
 
@@ -130,7 +177,7 @@ public class ServidorWeb {
 
     private void arquivoEstatico(HttpExchange troca) throws IOException {
         String metodo = troca.getRequestMethod();
-        ArquivoEstatico arquivo = ARQUIVOS.get(troca.getRequestURI().getPath());
+        ArquivoEstatico arquivo = arquivos.get(troca.getRequestURI().getPath());
 
         if (!"GET".equals(metodo) && !"HEAD".equals(metodo)) {
             troca.getResponseHeaders().set("Allow", "GET, HEAD");
@@ -143,16 +190,38 @@ public class ServidorWeb {
             return;
         }
 
-        try (InputStream entrada = ServidorWeb.class.getResourceAsStream(arquivo.recurso())) {
-            if (entrada == null) {
-                responder(troca, 404, "Página não encontrada.", "text/plain; charset=utf-8");
-                return;
-            }
-            responder(troca, 200, entrada.readAllBytes(), arquivo.tipo());
-        }
+        responder(troca, 200, arquivo.conteudo(), arquivo.tipo());
     }
 
     // ------------------------------------------------------------------ utilitários
+
+    private static ArquivoEstatico carregar(String recurso, String tipo) throws IOException {
+        try (InputStream entrada = ServidorWeb.class.getResourceAsStream(recurso)) {
+            if (entrada == null) {
+                throw new IOException("Arquivo do front-end não encontrado: " + recurso);
+            }
+            return new ArquivoEstatico(entrada.readAllBytes(), tipo);
+        }
+    }
+
+    /**
+     * IP de quem fez a requisição.
+     *
+     * <p>Atrás de um proxy (como no Render), todas as conexões chegam "vindas" do proxy.
+     * O IP real vem no cabeçalho X-Forwarded-For. Ele pode ser falsificado pelo cliente,
+     * por isso só é usado quando configurado, e o limite GLOBAL continua protegendo
+     * mesmo se alguém mentir o IP.</p>
+     */
+    private String ipDoCliente(HttpExchange troca) {
+        if (atrasDeProxy) {
+            String encaminhado = troca.getRequestHeaders().getFirst("X-Forwarded-For");
+
+            if (encaminhado != null && !encaminhado.isBlank()) {
+                return encaminhado.split(",")[0].trim();
+            }
+        }
+        return troca.getRemoteAddress().getAddress().getHostAddress();
+    }
 
     private static boolean vazio(String texto) {
         return texto == null || texto.isBlank();
@@ -179,6 +248,8 @@ public class ServidorWeb {
         cabecalhos.set("Cache-Control", "no-store");               // dados de boleto não ficam em cache
         cabecalhos.set("Content-Security-Policy",                  // só carrega scripts/estilos do próprio site
                 "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+        cabecalhos.set("Strict-Transport-Security",                // HSTS: navegador passa a usar só HTTPS
+                "max-age=31536000");                               // (ignorado em http://localhost, como deve ser)
 
         boolean head = "HEAD".equals(troca.getRequestMethod());
         troca.sendResponseHeaders(status, head ? -1 : corpo.length);

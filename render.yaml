@@ -1,0 +1,12 @@
+# Configuração do Render (render.com) - hospedagem gratuita da versão web
+services:
+  - type: web
+    name: sentinel
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/saude
+    autoDeploy: true
+    envVars:
+      # o Render fica na frente do Sentinel (proxy): o IP real do visitante vem no X-Forwarded-For
+      - key: SENTINEL_ATRAS_DE_PROXY
+        value: "true"

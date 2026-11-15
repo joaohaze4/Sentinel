@@ -3,6 +3,8 @@
 ![Testes](https://github.com/joaohaze4/sentinel/actions/workflows/testes.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-17%2B-blue)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/joaohaze4/Sentinel)
+
 **Verificador de boletos antes do pagamento.** O Sentinel lê a linha digitável (ou o código de barras) de um boleto bancário, confere se os números são válidos e aponta sinais de fraude, explicando cada um em linguagem simples.
 
 Funciona de dois jeitos: **pelo terminal** ou por uma **interface web** (front-end em HTML/CSS/JS conversando com uma API em Java).
@@ -135,7 +137,24 @@ curl -X POST http://localhost:8080/api/analisar \
 | `GET /api/saude` | Responde `{"status":"ok"}` (para monitoramento/hospedagem) |
 | `GET /` | Página web |
 
-Erros voltam com o status certo e uma mensagem: `400` (código inválido), `405` (método errado), `413` (requisição grande demais).
+Erros voltam com o status certo e uma mensagem: `400` (código inválido), `405` (método errado), `413` (requisição grande demais), `429` (muitas análises em pouco tempo, com o cabeçalho `Retry-After`).
+
+### Hospedagem (Render, grátis)
+
+O repositório já tem tudo pronto: `Dockerfile` (imagem em duas etapas: compila com JDK, roda só com JRE) e `render.yaml` (configuração do serviço).
+
+1. Crie uma conta em [render.com](https://render.com) entrando com o GitHub.
+2. Clique no botão **Deploy to Render** no topo deste README (ou em *New → Blueprint* e escolha este repositório).
+3. Confirme em **Apply**. Em alguns minutos o Render dá um link `https://sentinel-xxxx.onrender.com`.
+
+A cada push na `main`, o Render publica a versão nova sozinho. No plano grátis o serviço "dorme" depois de um tempo sem visitas e a primeira visita leva uns 30-50 segundos para acordar.
+
+Para testar a imagem no seu computador (precisa de Docker):
+
+```bash
+docker build -t sentinel .
+docker run -p 8080:8080 sentinel
+```
 
 ### Programa que roda sozinho
 
@@ -205,7 +224,7 @@ A regra de negócio fica **só no Java**: o front-end não sabe calcular nada, e
 - **Fator de vencimento:** dias desde 07/10/1997. Chegou em 9999 em 21/02/2025 e reiniciou em 1000 no dia 22/02/2025. O mesmo fator pode significar duas datas, então o Sentinel escolhe a mais próxima de hoje.
 - **`record`** (Java 16+): classes só de dados (`Boleto`, `Alerta`, `Resultado`).
 - **`BigDecimal`:** dinheiro nunca é guardado em `double`, porque `0.1 + 0.2` não dá `0.3` exato.
-- **Testes com JUnit 5:** 62 testes em `src/test/`, incluindo testes que sobem o servidor de verdade e fazem requisições HTTP. Os boletos de exemplo foram gerados por um programa separado, para os testes não conferirem o código contra ele mesmo.
+- **Testes com JUnit 5:** 74 testes em `src/test/`, incluindo testes que sobem o servidor de verdade, fazem requisições HTTP e simulam ataques. Os boletos de exemplo foram gerados por um programa separado, para os testes não conferirem o código contra ele mesmo.
 - **API HTTP sem framework:** o servidor usa o `HttpServer` que já vem no Java, para dar para enxergar o que frameworks como o Spring fazem por baixo.
 
 ## Segurança da versão web
@@ -214,7 +233,13 @@ A regra de negócio fica **só no Java**: o front-end não sabe calcular nada, e
 - **Content-Security-Policy:** a página só carrega scripts e estilos do próprio servidor.
 - **Sem path traversal:** só uma lista fechada de arquivos pode ser baixada; `/../build.gradle` dá 404.
 - **Limite de tamanho:** requisições acima de 4 KB são recusadas (`413`).
+- **Limite de requisições:** 30 análises por minuto por IP e 600 por minuto no total (`429`). O limite global protege mesmo se alguém falsificar o IP no `X-Forwarded-For`, e também impede que a memória cresça sem parar.
+- **Contra conexões lentas (slowloris):** o servidor fecha conexões que levam mais de 10 s para enviar a requisição ou receber a resposta, e atende 16 conexões ao mesmo tempo. Há testes que simulam o ataque, e eles falham se a proteção for desligada.
+- **HSTS:** o navegador passa a usar sempre HTTPS (o Render cuida do certificado).
+- **Container sem root:** a imagem Docker roda com um usuário comum, sem privilégios.
 - **Sem cache e sem armazenamento:** os dados do boleto não são salvos em lugar nenhum.
+
+O que **não** está coberto: ataques grandes e distribuídos (DDoS) exigem proteção na infraestrutura (CDN/firewall), não na aplicação.
 
 ## Limitações (importante)
 
@@ -230,7 +255,7 @@ Nenhuma ferramenta detecta 100% das fraudes. O Sentinel reduz o risco e explica 
 - [ ] Contas de consumo e tributos (padrão de arrecadação, 48 dígitos)
 - [ ] Cadastro de fornecedores (banco e faixa de valor que cada um costuma usar)
 - [x] Interface web + API HTTP
-- [ ] Hospedar a versão web online
+- [x] Preparar a hospedagem (Docker + Render)
 - [ ] Migrar a API para Spring Boot
 - [ ] Leitura do boleto em PDF/imagem
 - [ ] Lista completa de bancos a partir da tabela oficial do Banco Central

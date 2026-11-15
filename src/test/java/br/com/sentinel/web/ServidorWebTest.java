@@ -114,6 +114,7 @@ class ServidorWebTest {
         assertTrue(r.body().contains("<title>Sentinel"));
         assertTrue(r.headers().firstValue("Content-Security-Policy").orElse("").contains("default-src 'self'"));
         assertEquals("nosniff", r.headers().firstValue("X-Content-Type-Options").orElse(""));
+        assertTrue(r.headers().firstValue("Strict-Transport-Security").isPresent());
     }
 
     @Test

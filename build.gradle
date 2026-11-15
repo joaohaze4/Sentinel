@@ -37,6 +37,9 @@ tasks.named('run') {
 
 tasks.named('test') {
     useJUnitPlatform()
+    // nos testes, o tempo máximo por requisição é 2 s (em produção é 10 s) para o teste de "slowloris" ser rápido
+    systemProperty 'sun.net.httpserver.maxReqTime', '2'
+    systemProperty 'sun.net.httpserver.maxRspTime', '2'
     testLogging {
         events 'passed', 'failed', 'skipped'
     }
