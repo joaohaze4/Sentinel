@@ -5,6 +5,10 @@
 
 **Verificador de boletos antes do pagamento.** O Sentinel lê a linha digitável (ou o código de barras) de um boleto bancário, confere se os números são válidos e aponta sinais de fraude, explicando cada um em linguagem simples.
 
+Funciona de dois jeitos: **pelo terminal** ou por uma **interface web** (front-end em HTML/CSS/JS conversando com uma API em Java).
+
+![Interface web do Sentinel](docs/sentinel-web.png)
+
 > Projeto acadêmico de Ciência da Computação (ULBRA/CEULP) sobre prevenção a fraudes em pagamentos.
 
 ---
@@ -64,6 +68,18 @@ O resultado final é decidido pelo alerta **mais grave**: `SEM ALERTAS`, `BAIXO 
 
 Precisa só do **Java 17 ou mais novo**. O Gradle vem junto (`gradlew`), não precisa instalar.
 
+### Versão web
+
+```bash
+./gradlew run --args="--web"
+```
+
+Abra **http://localhost:8080** no navegador. Para usar outra porta: `--args="--web --porta 9090"`.
+
+> Dica: com o computador e o celular no mesmo Wi-Fi, dá para abrir no celular usando o IP do computador (ex.: `http://192.168.0.10:8080`).
+
+### Terminal
+
 ```bash
 # rodar os testes
 ./gradlew test
@@ -80,7 +96,48 @@ Precisa só do **Java 17 ou mais novo**. O Gradle vem junto (`gradlew`), não pr
 
 No Windows, use `gradlew.bat` no lugar de `./gradlew`.
 
-Para gerar um programa que roda sozinho:
+### API
+
+O front-end usa a mesma API que qualquer outro sistema pode usar:
+
+```bash
+curl -X POST http://localhost:8080/api/analisar \
+     -d "codigo=23791790011043510047391020150008216560000025000" \
+     -d "banco=341" -d "valor=250,00"
+```
+
+```json
+{
+  "classificacao": "ALTO_RISCO",
+  "classificacaoTexto": "ALTO RISCO",
+  "recomendacao": "NÃO pague antes de confirmar o boleto direto com quem cobrou (site, app ou telefone oficial).",
+  "pontuacao": 60,
+  "boleto": {
+    "linhaFormatada": "23791.79001 10435.100473 91020.150008 2 16560000025000",
+    "banco": "237",
+    "bancoNome": "Bradesco",
+    "valor": "250.00",
+    "vencimento": "2026-12-10",
+    "diasParaVencer": 25
+  },
+  "alertas": [
+    { "nivel": "ALTO", "titulo": "Banco diferente do esperado", "detalhe": "O pagamento vai para o banco 237 (Bradesco)..." }
+  ],
+  "aviso": "O Sentinel confere só os números do boleto..."
+}
+```
+
+*(resposta resumida)*
+
+| Rota | O que faz |
+|---|---|
+| `POST /api/analisar` | Analisa o boleto. Campos: `codigo` (obrigatório), `valor`, `banco`, `vencimento` |
+| `GET /api/saude` | Responde `{"status":"ok"}` (para monitoramento/hospedagem) |
+| `GET /` | Página web |
+
+Erros voltam com o status certo e uma mensagem: `400` (código inválido), `405` (método errado), `413` (requisição grande demais).
+
+### Programa que roda sozinho
 
 ```bash
 ./gradlew installDist
@@ -115,16 +172,29 @@ src/main/java/br/com/sentinel/
 │   ├── AnalisadorDeRisco.java ← roda todas as regras e junta o resultado
 │   ├── Regra.java             ← interface que toda regra implementa
 │   └── regras/                ← uma classe por verificação
-├── relatorio/                 ← MOSTRAR o resultado
-└── cli/                       ← ler os argumentos do terminal
+├── relatorio/                 ← MOSTRAR o resultado (terminal)
+├── cli/                       ← ler os argumentos do terminal
+└── web/                       ← servidor HTTP + API JSON
+    ├── ServidorWeb.java       ← rotas, segurança e respostas
+    ├── RespostaJson.java      ← Resultado → JSON
+    ├── Json.java              ← escapar texto em JSON
+    └── Formulario.java        ← ler o formulário enviado pelo navegador
+
+src/main/resources/web/        ← FRONT-END
+├── index.html
+├── estilo.css
+└── app.js                     ← chama a API com fetch() e monta o resultado
 ```
 
-O fluxo é sempre o mesmo:
+O fluxo é sempre o mesmo. Só muda a "porta de entrada" e a forma de mostrar:
 
 ```text
-texto digitado ──► LeitorDeBoleto ──► Boleto ──► AnalisadorDeRisco ──► Resultado ──► RelatorioTexto
-                                                   (roda cada Regra)
+terminal ─┐                                                                  ┌─► RelatorioTexto (terminal)
+          ├─► LeitorDeBoleto ─► Boleto ─► AnalisadorDeRisco ─► Resultado ─┤
+navegador ┘   (via POST /api/analisar)     (roda cada Regra)              └─► RespostaJson ─► app.js (tela)
 ```
+
+A regra de negócio fica **só no Java**: o front-end não sabe calcular nada, ele só mostra o que a API devolve.
 
 **Para adicionar uma verificação nova**, crie uma classe em `analise/regras/` que implementa `Regra` e coloque-a na lista do `AnalisadorDeRisco`. Nada mais precisa mudar (padrão de projeto *Strategy*).
 
@@ -135,7 +205,16 @@ texto digitado ──► LeitorDeBoleto ──► Boleto ──► AnalisadorDeR
 - **Fator de vencimento:** dias desde 07/10/1997. Chegou em 9999 em 21/02/2025 e reiniciou em 1000 no dia 22/02/2025. O mesmo fator pode significar duas datas, então o Sentinel escolhe a mais próxima de hoje.
 - **`record`** (Java 16+): classes só de dados (`Boleto`, `Alerta`, `Resultado`).
 - **`BigDecimal`:** dinheiro nunca é guardado em `double`, porque `0.1 + 0.2` não dá `0.3` exato.
-- **Testes com JUnit 5:** 42 testes em `src/test/`. Os boletos de exemplo foram gerados por um programa separado, para os testes não conferirem o código contra ele mesmo.
+- **Testes com JUnit 5:** 62 testes em `src/test/`, incluindo testes que sobem o servidor de verdade e fazem requisições HTTP. Os boletos de exemplo foram gerados por um programa separado, para os testes não conferirem o código contra ele mesmo.
+- **API HTTP sem framework:** o servidor usa o `HttpServer` que já vem no Java, para dar para enxergar o que frameworks como o Spring fazem por baixo.
+
+## Segurança da versão web
+
+- **Sem XSS:** o `app.js` monta a tela com `textContent`, nunca com `innerHTML`, então nenhum texto vira código.
+- **Content-Security-Policy:** a página só carrega scripts e estilos do próprio servidor.
+- **Sem path traversal:** só uma lista fechada de arquivos pode ser baixada; `/../build.gradle` dá 404.
+- **Limite de tamanho:** requisições acima de 4 KB são recusadas (`413`).
+- **Sem cache e sem armazenamento:** os dados do boleto não são salvos em lugar nenhum.
 
 ## Limitações (importante)
 
@@ -150,7 +229,9 @@ Nenhuma ferramenta detecta 100% das fraudes. O Sentinel reduz o risco e explica 
 
 - [ ] Contas de consumo e tributos (padrão de arrecadação, 48 dígitos)
 - [ ] Cadastro de fornecedores (banco e faixa de valor que cada um costuma usar)
-- [ ] API REST (Spring Boot) para integrar com sistemas de contas a pagar
+- [x] Interface web + API HTTP
+- [ ] Hospedar a versão web online
+- [ ] Migrar a API para Spring Boot
 - [ ] Leitura do boleto em PDF/imagem
 - [ ] Lista completa de bancos a partir da tabela oficial do Banco Central
 

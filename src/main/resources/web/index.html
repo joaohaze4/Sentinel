@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sentinel: confira se um boleto é seguro antes de pagar.">
+    <title>Sentinel | Verificador de boletos</title>
+    <link rel="stylesheet" href="/estilo.css">
+    <!-- defer: o script roda depois que a página carregou -->
+    <script src="/app.js" defer></script>
+</head>
+<body>
+
+<main class="app">
+
+    <header class="topo">
+        <p class="rotulo">&lt;SENTINEL / ANTIFRAUDE&gt;</p>
+        <h1><span class="escudo" aria-hidden="true">🛡️</span> Sentinel</h1>
+        <p class="sub">Confira o boleto <strong>antes</strong> de pagar.</p>
+    </header>
+
+    <!-- ===================== FORMULÁRIO ===================== -->
+    <section class="card" aria-labelledby="titulo-form">
+        <h2 id="titulo-form" class="titulo-card"><span>[01]</span> Boleto</h2>
+
+        <form id="formulario" novalidate>
+
+            <label class="campo" for="codigo">
+                Linha digitável ou código de barras
+                <textarea id="codigo" name="codigo" rows="2" inputmode="numeric" autocomplete="off"
+                          spellcheck="false" placeholder="34191.79001 10435.100473 91020.150008 7 16560000025000"></textarea>
+            </label>
+
+            <details id="esperado" class="esperado">
+                <summary>
+                    O que você esperava pagar?
+                    <small>opcional, mas é o que pega o golpe mais comum</small>
+                </summary>
+
+                <div class="campos">
+                    <label class="campo">
+                        Valor
+                        <input name="valor" inputmode="decimal" autocomplete="off" placeholder="250,00">
+                    </label>
+
+                    <label class="campo">
+                        Banco
+                        <input name="banco" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="341">
+                    </label>
+
+                    <label class="campo">
+                        Vencimento
+                        <input name="vencimento" type="date">
+                    </label>
+                </div>
+            </details>
+
+            <button type="submit" id="botao" class="botao">Analisar boleto</button>
+
+            <div class="exemplos">
+                <span>Testar com um exemplo:</span>
+                <button type="button" class="exemplo" data-exemplo="valido">✅ válido</button>
+                <button type="button" class="exemplo" data-exemplo="adulterado">🔴 adulterado</button>
+                <button type="button" class="exemplo" data-exemplo="trocado">🔴 banco trocado</button>
+                <button type="button" class="exemplo" data-exemplo="desconhecido">🟡 banco desconhecido</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- ===================== RESULTADO ===================== -->
+    <!-- aria-live: leitores de tela anunciam quando o resultado aparece -->
+    <section id="resultado" class="card escondido" aria-live="polite" aria-labelledby="titulo-resultado">
+        <h2 id="titulo-resultado" class="titulo-card"><span>[02]</span> Resultado</h2>
+        <div id="conteudo-resultado"></div>
+    </section>
+
+    <footer class="rodape">
+        <p>Os exemplos são boletos fictícios. Nenhum dado é guardado.</p>
+        <p>
+            <a href="https://github.com/joaohaze4/Sentinel" target="_blank" rel="noopener">código no GitHub</a>
+            ·
+            <a href="https://joaohaze4.github.io/potifolio/" target="_blank" rel="noopener">João Guilherme</a>
+        </p>
+    </footer>
+
+</main>
+
+</body>
+</html>

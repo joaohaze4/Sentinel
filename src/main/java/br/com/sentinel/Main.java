@@ -9,7 +9,9 @@ import br.com.sentinel.boleto.EntradaInvalidaException;
 import br.com.sentinel.boleto.LeitorDeBoleto;
 import br.com.sentinel.cli.Argumentos;
 import br.com.sentinel.relatorio.RelatorioTexto;
+import br.com.sentinel.web.ServidorWeb;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
@@ -32,6 +34,7 @@ public class Main {
             Uso:
               sentinel CODIGO [opções]
               sentinel                 (sem nada: modo interativo, ele pergunta tudo)
+              sentinel --web           abre a versão web em http://localhost:8080
 
             CODIGO: linha digitável (47 dígitos) ou código de barras (44 dígitos).
                     Pontos e espaços são ignorados.
@@ -41,6 +44,7 @@ public class Main {
               --banco 341              código do banco esperado
               --vencimento 10/12/2026  vencimento esperado
               --hoje 2026-11-15        muda a data de referência (para testes)
+              --porta 8080             porta da versão web (com --web)
               --ajuda                  mostra esta mensagem
             """;
 
@@ -52,6 +56,11 @@ public class Main {
 
             if (argumentos.ajuda()) {
                 saida.print(AJUDA);
+                return;
+            }
+
+            if (argumentos.web()) {
+                iniciarWeb(argumentos.porta(), saida);
                 return;
             }
 
@@ -95,7 +104,21 @@ public class Main {
                 banco.isBlank() ? null : Argumentos.lerBanco(banco),
                 vencimento.isBlank() ? null : Argumentos.lerData(vencimento));
 
-        return new Argumentos(codigo, esperado, base.hoje(), false);
+        return new Argumentos(codigo, esperado, base.hoje(), false, false, base.porta());
+    }
+
+    /** Sobe o servidor web. Ele continua rodando até o usuário apertar Ctrl+C. */
+    private static void iniciarWeb(int porta, PrintStream saida) {
+        try {
+            ServidorWeb servidor = new ServidorWeb(porta);
+            servidor.iniciar();
+            saida.println("Sentinel rodando em http://localhost:" + servidor.porta());
+            saida.println("Abra esse endereço no navegador. Para parar, aperte Ctrl+C.");
+        } catch (IOException e) {
+            saida.println("Erro: não consegui abrir a porta " + porta
+                    + ". Ela pode estar em uso; tente outra com --porta 8081.");
+            System.exit(1);
+        }
     }
 
     private static String lerLinha(Scanner teclado) {
