@@ -1,0 +1,50 @@
+plugins {
+    id 'application'
+}
+
+group = 'br.com.sentinel'
+version = '0.1.0'
+
+java {
+    // Java 17 ou mais novo
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'br.com.sentinel.Main'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+// deixa o modo interativo (sem argumentos) ler o teclado com ./gradlew run
+tasks.named('run') {
+    standardInput = System.in
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+    }
+}
+
+// gera um .jar que roda sozinho: java -jar build/libs/sentinel-0.1.0.jar
+tasks.named('jar') {
+    manifest {
+        attributes 'Main-Class': 'br.com.sentinel.Main'
+    }
+}
