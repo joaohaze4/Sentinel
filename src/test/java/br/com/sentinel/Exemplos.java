@@ -41,6 +41,36 @@ public final class Exemplos {
     /** Moeda 5 em vez de 9 (dígitos recalculados para isolar só esse problema). */
     public static final String MOEDA_ERRADA_LINHA = "34151790051043510047391020150008116560000025000";
 
+    // ----------------------------------------------------- contas de consumo (arrecadação)
+
+    /** Energia (segmento 3), módulo 10, R$ 187,52, empresa 0048. */
+    public static final String LUZ_LINHA = "836500000010875200480007000000012344567890123456";
+    public static final String LUZ_BARRAS = "83650000001875200480000000000123456789012345";
+
+    /** A conta de luz com UM dígito trocado no bloco 2. */
+    public static final String LUZ_ADULTERADA_LINHA = "836500000010879200480007000000012344567890123456";
+
+    /** Água (segmento 2), módulo 11, R$ 94,30, empresa 0102. */
+    public static final String AGUA_LINHA = "828500000000943001022025612100000004004567890000";
+
+    /** Telefone (segmento 4), R$ 187,52, empresa 0221. */
+    public static final String TELEFONE_LINHA = "846300000011875202210006000000012344567890123456";
+
+    /** Carnê (segmento 6): empresa identificada pela raiz do CNPJ 12.345.678. */
+    public static final String CNPJ_LINHA = "866600000057499012345678800000000003987654321007";
+
+    /** Valor de referência (3ª posição = 7), não em reais. */
+    public static final String REFERENCIA_LINHA = "847300000001100002210001000000000000005555111128";
+
+    /** Sem valor no código. */
+    public static final String CONTA_SEM_VALOR_LINHA = "816500000004000007770001000000000000000000123455";
+
+    /** 3ª posição = 5 (não existe). */
+    public static final String IDENTIFICACAO_INVALIDA_LINHA = "835600000013875200480009000000012343567890123457";
+
+    /** Segmento 0 (não existe). */
+    public static final String SEGMENTO_INVALIDO_LINHA = "806800000010875200480007000000012344567890123456";
+
     private Exemplos() {
     }
 }

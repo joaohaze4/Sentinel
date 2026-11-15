@@ -20,6 +20,24 @@ class DigitoVerificadorTest {
         assertEquals(esperado, DigitoVerificador.modulo10(numeros));
     }
 
+    @ParameterizedTest(name = "módulo 11 de arrecadação de {0} = {1}")
+    @CsvSource({
+            "8270000000000940102202612, 7",
+            "00000000000, 0",   // resto 0 → 0
+            "1, 9",
+            "19, 1"             // resto 10 → 1
+    })
+    void calculaModulo11Arrecadacao(String numeros, int esperado) {
+        assertEquals(esperado, DigitoVerificador.modulo11Arrecadacao(numeros));
+    }
+
+    @Test
+    void arrecadacaoEscolheOModuloPelaTerceiraPosicao() {
+        assertEquals(DigitoVerificador.modulo10("83600000001"), DigitoVerificador.arrecadacao('6', "83600000001"));
+        assertEquals(DigitoVerificador.modulo11Arrecadacao("83600000001"),
+                DigitoVerificador.arrecadacao('8', "83600000001"));
+    }
+
     @Test
     void calculaModulo11DoCodigoDeBarras() {
         // código de barras válido sem o 5º dígito (que é o próprio DV)

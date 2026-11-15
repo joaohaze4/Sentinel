@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /** Avisa quando o código do banco não está na lista conhecida. */
-public class RegraBancoConhecido implements Regra {
+public class RegraBancoConhecido implements Regra<Boleto> {
 
     @Override
     public List<Alerta> avaliar(Boleto boleto, DadosEsperados esperado, LocalDate hoje) {

@@ -4,6 +4,7 @@ import br.com.sentinel.analise.Alerta;
 import br.com.sentinel.analise.Resultado;
 import br.com.sentinel.boleto.Bancos;
 import br.com.sentinel.boleto.Boleto;
+import br.com.sentinel.boleto.ContaDeConsumo;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -18,18 +19,17 @@ public final class RelatorioTexto {
     }
 
     public static String gerar(Resultado resultado, LocalDate hoje) {
-        Boleto b = resultado.boleto();
         StringBuilder sb = new StringBuilder();
 
         sb.append(LINHA).append('\n');
-        sb.append("  SENTINEL - análise de boleto antes do pagamento\n");
+        sb.append("  SENTINEL - análise antes do pagamento\n");
         sb.append(LINHA).append("\n\n");
 
-        sb.append("Linha digitável : ").append(Formatador.linhaDigitavel(b.linhaDigitavel())).append('\n');
-        sb.append("Banco           : ").append(Bancos.descricao(b.codigoBanco())).append('\n');
-        sb.append("Valor           : ")
-                .append(b.semValor() ? "não definido no código" : Formatador.moeda(b.valor())).append('\n');
-        sb.append("Vencimento      : ").append(descreverVencimento(b, hoje)).append("\n\n");
+        if (resultado.documento() instanceof Boleto b) {
+            descreverBoleto(sb, b, hoje);
+        } else if (resultado.documento() instanceof ContaDeConsumo c) {
+            descreverConta(sb, c);
+        }
 
         sb.append("Resultado       : ").append(resultado.classificacao().name().replace('_', ' '))
                 .append("  (pontuação ").append(resultado.pontuacao()).append("/100)\n");
@@ -48,10 +48,45 @@ public final class RelatorioTexto {
         }
 
         sb.append('\n');
-        sb.append("Aviso: o Sentinel confere só os números do boleto. Ele NÃO confirma quem\n");
+        sb.append("Aviso: o Sentinel confere só os números do código. Ele NÃO confirma quem\n");
         sb.append("recebe o dinheiro. Antes de pagar, veja o nome do beneficiário no app do banco.\n");
 
         return sb.toString();
+    }
+
+    private static void descreverBoleto(StringBuilder sb, Boleto b, LocalDate hoje) {
+        sb.append("Tipo            : boleto bancário\n");
+        sb.append("Linha digitável : ").append(Formatador.linhaDigitavel(b.linhaDigitavel())).append('\n');
+        sb.append("Banco           : ").append(Bancos.descricao(b.codigoBanco())).append('\n');
+        sb.append("Valor           : ")
+                .append(b.semValor() ? "não definido no código" : Formatador.moeda(b.valor())).append('\n');
+        sb.append("Vencimento      : ").append(descreverVencimento(b, hoje)).append("\n\n");
+    }
+
+    private static void descreverConta(StringBuilder sb, ContaDeConsumo c) {
+        sb.append("Tipo            : conta de consumo / tributo\n");
+        sb.append("Linha digitável : ").append(Formatador.linhaDigitavelConta(c.linhaDigitavel())).append('\n');
+        sb.append("Segmento        : ").append(c.codigoSegmento()).append(" (")
+                .append(c.segmento().map(s -> s.descricao()).orElse("não existe")).append(")\n");
+        sb.append("Empresa         : ").append(descreverEmpresa(c)).append('\n');
+        sb.append("Valor           : ").append(descreverValor(c)).append('\n');
+        sb.append("Vencimento      : não vem no código (confira na conta)\n\n");
+    }
+
+    static String descreverEmpresa(ContaDeConsumo c) {
+        return c.empresaPorCnpj()
+                ? "CNPJ (raiz) " + Formatador.cnpjRaiz(c.empresa())
+                : "código " + c.empresa();
+    }
+
+    static String descreverValor(ContaDeConsumo c) {
+        if (c.semValor()) {
+            return "não definido no código";
+        }
+        if (!c.valorEmReais()) {
+            return c.valor().toPlainString() + " (moeda de referência, não é em reais)";
+        }
+        return Formatador.moeda(c.valor());
     }
 
     /**

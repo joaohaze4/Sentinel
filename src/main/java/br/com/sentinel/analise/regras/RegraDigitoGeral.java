@@ -14,7 +14,7 @@ import java.util.List;
  * Confere o dígito verificador geral (posição 5 do código de barras, módulo 11).
  * Ele "protege" o código inteiro: banco, valor, vencimento e campo livre.
  */
-public class RegraDigitoGeral implements Regra {
+public class RegraDigitoGeral implements Regra<Boleto> {
 
     @Override
     public List<Alerta> avaliar(Boleto boleto, DadosEsperados esperado, LocalDate hoje) {

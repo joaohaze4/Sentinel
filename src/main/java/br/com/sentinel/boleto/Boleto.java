@@ -29,12 +29,7 @@ public record Boleto(
         int fatorVencimento,
         LocalDate vencimento,
         BigDecimal valor,
-        String campoLivre) {
-
-    /** {@code true} quando o boleto não define valor (ele é digitado na hora de pagar). */
-    public boolean semValor() {
-        return valor.signum() == 0;
-    }
+        String campoLivre) implements Documento {
 
     /** {@code true} quando o boleto não tem data de vencimento (fator 0000). */
     public boolean semVencimento() {

@@ -18,7 +18,7 @@ import java.util.List;
  * <p>Esta é a regra que pega o golpe do "boleto adulterado bem feito": o código é válido,
  * todos os dígitos batem, mas o dinheiro vai para outro banco/conta.</p>
  */
-public class RegraDadosEsperados implements Regra {
+public class RegraDadosEsperados implements Regra<Boleto> {
 
     @Override
     public List<Alerta> avaliar(Boleto boleto, DadosEsperados esperado, LocalDate hoje) {
